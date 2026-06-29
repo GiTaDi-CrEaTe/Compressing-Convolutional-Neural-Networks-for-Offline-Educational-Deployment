@@ -4,53 +4,73 @@
 
 Author: Adityajyoti Kar
 
-Overview:
-This repository contains the deployment pipeline and experimental artifacts for compressing a Convolutional Neural Network (CNN) designed for extreme low-resource offline inference. By utilizing iterative magnitude-based weight pruning (TF-MOT) and post-training INT8 quantization (TFLite), this project achieves a 3.64x memory reduction with zero accuracy loss (98.78%) on the MNIST 28x28 dataset.
+# ⚡ Edge AI Compression: Pruning & INT8 Quantization
 
-Repository Structure:
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-    cnn_baseline.py: Constructs, trains, and exports the true FP32 baseline CNN.
+> **Mission:** Access to artificial intelligence tools in rural and low-resource educational settings is fundamentally constrained by hardware. This project provides a transparent, low-cost, and entirely reproducible pipeline for deploying handwriting-recognition tools on inexpensive edge hardware without requiring GPUs, cloud services, or internet connectivity.
 
-    cnn_pruning.py: Clones the isolated baseline weights, applies 70% structural sparsity, fine-tunes, and exports the compressed TFLite artifacts.
+## 📊 Core Benchmarks
 
-    evaluate_models.py: Runs the standard TFLite Interpreter across all 4 experimental artifacts on the full 10,000-image test set to calculate accuracy and byte footprints.
+By combining iterative magnitude-based weight pruning (TF-MOT) with post-training full-integer quantization (TFLite), this architecture achieves a **3.64x memory reduction** with zero degradation to the baseline prediction accuracy.
 
-    make_figures.py: Matplotlib generator for the architectural and empirical charts.
+| Deployment Configuration | Test Accuracy | File Size (Bytes) | Compression Ratio |
+|--------------------------|---------------|-------------------|-------------------|
+| Baseline (FP32)          | 98.78%        | 224,892           | 1.00x             |
+| Pruned (70% Sparsity)    | 98.77%        | 224,892* | 1.00x             |
+| Quantized (INT8)         | 98.69%        | 61,800            | 3.64x             |
+| **Pruned + INT8** | **98.78%** | **61,800** | **3.64x** |
 
-    /*.tflite: The final compiled deployment artifacts.
+*\*Note: FP32 pruned size remains unchanged due to the dense serialization layout of standard TensorFlow Lite flatbuffers, demonstrating that structural sparsity requires quantization or specialized sparsity-aware inference engines to realize physical footprint reductions.*
 
-Quick Start to Reproduce Results:
+## 🏗️ Repository Architecture
 
-    Install requirements: pip install tensorflow tensorflow-model-optimization scikit-learn matplotlib numpy
+The codebase is structured for production-grade CI/CD and automated tolerance testing.
 
-    Run python evaluate_models.py to instantly verify the 98.78% accuracy and file size footprint of the included .tflite artifacts.
+```text
+.
+|-- LICENSE
+|-- README.md
+|-- benchmark.py
+|-- error_analysis.py
+|-- evaluate_models.py
+|-- figure1.png
+|-- figure2.png
+|-- figure3.png
+|-- figure4.png
+|-- make_figures.py
+|-- models
+|   |-- baseline_cnn_28.keras
+|   |-- model_fp32.tflite
+|   |-- model_fp32_28.tflite
+|   |-- model_int8.tflite
+|   |-- model_int8_28.tflite
+|   |-- model_pruned_70_fp32.tflite
+|   |-- model_pruned_70_int8.tflite
+|   `-- true_baseline.weights.h5
+|-- src
+|   |-- cnn_baseline.py
+|   `-- cnn_pruning.py
+`-- tests
+    `-- test_pipeline.py
 
-##ABSTRACT--
-An Empirical Study of Pruning and INT8 Quantization
-Access to artificial intelligence tools in rural and
-low-resource educational settings is fundamentally constrained
-by hardware: most schools have, at best, low-end smartphones or
-shared desktop computers, and rarely have internet connectivity
-reliable enough for cloud-based inference. This paper presents
-a fully reproducible empirical study of two standard model-
-compression techniques—magnitude-based weight pruning and
-post-training 8-bit (INT8) quantization—applied to a compact
-convolutional neural network (CNN) trained for handwritten
-digit recognition on the MNIST dataset. Using a controlled
-experimental design in which an independently cloned copy of a
-trained baseline model is pruned and fine-tuned, we measure the
-accuracy, model size, and compression ratio of four deployment
-configurations. The baseline CNN achieves 98.78% test accuracy
-on the full 10,000-image test set with a 224,892-byte TensorFlow
-Lite footprint. INT8 quantization reduces this to 61,800 bytes
-(a 3.64x reduction) with a negligible 0.09 percentage-point shift
-in accuracy. Iterative pruning to 70% sparsity with fine-tuning
-matches the baseline almost perfectly at 98.77%, while leaving
-the FP32 file size unchanged—a result we explain in terms of
-the dense storage format used by standard TensorFlow Lite
-flatbuffers. Combining pruning with quantization achieves the
-same 3.64x compression as quantization alone, restoring accuracy
-to exactly 98.78%. These results provide a transparent, low-
-cost, and entirely reproducible reference point for deploying
-handwriting-recognition tools on inexpensive edge hardware
-without requiring GPUs or cloud services.
+🚀 Quick Start
+
+Reproduce the exact compression ratios and accuracy benchmarks in under 5 minutes using a standard CPU.
+
+1. Install Dependencies
+
+pip install tensorflow tensorflow-model-optimization scikit-learn matplotlib numpy pytest seaborn
+
+2. Run the Benchmark Harness
+Instantly verify the 98.78% accuracy and 61.8 KB file size footprint of the compiled artifacts against the full 10,000-image test set.
+
+python benchmark.py
+
+3. Execute Automated Guardrails
+Verify that INT8 precision loss remains within the strict <0.5% tolerance threshold.
+
+pytest tests/test_pipeline.py -v
